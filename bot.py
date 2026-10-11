@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 
 # ================= CẤU HÌNH =================
 BOT_TOKEN = "8859551015:AAF_BlAuGkhSMGtZ2mgDdOfZ16AqLCF8LsI"
-CHAT_ID = "5410388834"  # Đã điền sẵn ID Telegram của bạn
+CHAT_ID = "5410388834"
 
 URL = "https://" + "service.dungpham.com.vn/thong-bao"
 PLAYER_NAME = "zzpeacezz"
@@ -71,14 +71,12 @@ async def run_bot():
         print(f"🌐 Đang truy cập: {URL} ...")
         await page.goto(URL, wait_until="networkidle", timeout=60000)
 
-        # Đóng bảng thông báo chào mừng ("Tiếp tục") nếu có
-        try:
-            btn_continue = page.locator("button:has-text('Tiếp tục'), text='Tiếp tục'")
-            if await btn_continue.count() > 0 and await btn_continue.first.is_visible():
-                await btn_continue.first.click()
-                await page.wait_for_timeout(500)
-        except:
-            pass
+        # 🧹 Tự động xóa sạch lớp phủ chào mừng / popup chắn màn hình nếu có
+        await page.evaluate("""() => {
+            const backdrops = document.querySelectorAll('.official-welcome-backdrop, [class*="backdrop"], [class*="modal"]');
+            backdrops.forEach(el => el.remove());
+        }""")
+        await page.wait_for_timeout(1000)
 
         # 1. Chọn Máy chủ "Super 2"
         try:
@@ -118,10 +116,10 @@ async def run_bot():
         if await input_box.count() > 0:
             await input_box.fill(PLAYER_NAME)
 
-        # 4. Bấm nút "Tìm"
+        # 4. Bấm nút "Tìm" (Dùng force=True để bỏ qua mọi lớp chặn nếu có)
         search_btn = page.locator("button:has-text('Tìm')").first
         if await search_btn.count() > 0:
-            await search_btn.click()
+            await search_btn.click(force=True)
         else:
             await input_box.press("Enter")
 
