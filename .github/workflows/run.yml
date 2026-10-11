@@ -1,0 +1,35 @@
+name: Run Game Bot
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Tự động chạy lại cứ mỗi 10 phút
+  workflow_dispatch:        # Cho phép bấm nút chạy thủ công bất cứ lúc nào
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests playwright
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run bot script
+        run: python bot.py
+
+      - name: Save seen state
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Cập nhật danh sách thông báo đã xem"
+          file_pattern: seen.txt
