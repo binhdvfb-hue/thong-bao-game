@@ -5,8 +5,9 @@ import requests
 from playwright.async_api import async_playwright
 
 # ================= CẤU HÌNH =================
-# Tách chuỗi Token để chống tool quét trộm tự động trên GitHub
-BOT_TOKEN = "8859551015" + ":" + "AAF_BlAuGkhSMGtZ2mg" + "DdOfZ16AqLCF8LsI"
+BOT_TOKEN = "8859551015:AAF_BlAuGkhSMGtZ2mgDdOfZ16AqLCF8LsI"
+CHAT_ID = "5410388834"  # Đã điền sẵn ID Telegram của bạn
+
 URL = "https://" + "service.dungpham.com.vn/thong-bao"
 PLAYER_NAME = "zzpeacezz"
 SERVER_NAME = "Super 2"
@@ -14,26 +15,11 @@ CATEGORY_NAME = "Hệ thống"
 SEEN_FILE = "seen.txt"
 # ============================================
 
-def get_chat_id():
-    """Xóa webhook lạ (nếu có) và tự động tìm ID tài khoản Telegram vừa nhắn cho bot"""
-    try:
-        requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook", timeout=10)
-        api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-        res = requests.get(api_url, timeout=10).json()
-        results = res.get("result", [])
-        for item in reversed(results):
-            msg = item.get("message") or item.get("edited_message")
-            if msg and "chat" in msg:
-                return str(msg["chat"]["id"])
-    except Exception as e:
-        print(f"Lỗi kiểm tra Telegram: {e}")
-    return None
-
-def send_telegram(chat_id: str, message: str):
-    """Gửi thông báo về Telegram"""
+def send_telegram(message: str):
+    """Gửi thông báo trực tiếp về Telegram qua Chat ID cố định"""
     api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
-        "chat_id": chat_id,
+        "chat_id": CHAT_ID,
         "text": message,
         "parse_mode": "HTML"
     }
@@ -43,7 +29,6 @@ def send_telegram(chat_id: str, message: str):
         print(f"[Lỗi gửi Telegram]: {e}")
 
 def normalize_notification(raw_text: str) -> str:
-    """Loại bỏ chữ '- X giờ trước' để không bị báo lặp khi thời gian trôi qua"""
     cleaned = re.sub(
         r'\s*-\s*(\d+\s*(giây|phút|giờ|ngày|tháng|năm)\s*trước|Vừa cập nhật).*',
         '',
@@ -64,19 +49,13 @@ def save_seen(seen_set):
             f.write(item.replace("\n", " | ") + "\n")
 
 async def run_bot():
-    print("🔄 Đang kết nối với Telegram Bot...")
-    chat_id = get_chat_id()
-    if not chat_id:
-        print("\n❌ CHƯA TÌM THẤY TÀI KHOẢN CỦA BẠN!")
-        print("👉 Hãy vào Telegram, mở con bot mới -> nhấn START và gửi chữ 'alo' nhé!")
-        return
-
+    print("🔄 Đang khởi động bot quét dữ liệu...")
+    
     first_run = not os.path.exists(SEEN_FILE)
     seen_notifications = load_seen()
 
     if first_run:
         send_telegram(
-            chat_id,
             f"✅ <b>Bot GitHub đã kết nối thành công!</b>\n"
             f"Đang theo dõi nhân vật <b>{PLAYER_NAME}</b>\n"
             f"🌐 Máy chủ: <b>{SERVER_NAME}</b> | Danh mục: <b>{CATEGORY_NAME}</b>"
@@ -168,10 +147,10 @@ async def run_bot():
                     seen_notifications.add(unique_key)
                     if first_run:
                         if match == matches[0]:
-                            send_telegram(chat_id, f"🔔 <b>[Thông báo gần nhất hiện tại]:</b>\n\n{clean_msg}")
+                            send_telegram(f"🔔 <b>[Thông báo gần nhất hiện tại]:</b>\n\n{clean_msg}")
                             print(f"📩 Đã gửi tin gần nhất về Telegram:\n{clean_msg}")
                     else:
-                        send_telegram(chat_id, f"🎉 <b>THÔNG BÁO MỚI RƠI ĐỒ:</b>\n\n{clean_msg}")
+                        send_telegram(f"🎉 <b>THÔNG BÁO MỚI RƠI ĐỒ:</b>\n\n{clean_msg}")
                         print(f"🎉 Phát hiện mới:\n{clean_msg}")
 
         save_seen(seen_notifications)
