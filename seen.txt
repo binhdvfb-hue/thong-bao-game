@@ -9,6 +9,20 @@
 [BOSS]_Boss: Tiểu đội trưởng | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:30:07
 [BOSS]_INIT
 [DROP_PEACELOVE]_INIT
+[DROP_V7_PEACELOVE]_INIT
+[DROP_V7_PEACELOVE]_peacelove vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 07/10/2026 - 18:20:36
+[DROP_V7_PEACELOVE]_peacelove vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 11/10/2026 - 23:56:02
+[DROP_V7_ZZPEACEZZ]_INIT
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt Set Thần Vũ Trụ Kaio | Thời gian xuất hiện · 08/10/2026 - 08:35:36
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt Set Thần Vũ Trụ Kaio | Thời gian xuất hiện · 11/10/2026 - 13:00:52
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 08/10/2026 - 14:10:39
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 08/10/2026 - 23:35:02
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 09/10/2026 - 00:10:14
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 09/10/2026 - 14:37:08
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 10/10/2026 - 02:44:29
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 10/10/2026 - 04:15:36
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 12/10/2026 - 08:17:33
+[DROP_V7_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 12/10/2026 - 13:04:06
 [DROP_ZZPEACEZZ]_INIT
 [MULTI_PLAYER_V3_INIT]
 [PLAYER]_INIT
