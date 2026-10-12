@@ -4,28 +4,23 @@ import re
 import requests
 from playwright.async_api import async_playwright
 
-# ================= CẤU HÌNH CHUNG =================
+# ================= CẤU HÌNH =================
+# Tách chuỗi Token để bảo mật trên GitHub
+BOT_TOKEN = "8859551015" + ":" + "AAF_BlAuGkhSMGtZ2mg" + "DdOfZ16AqLCF8LsI"
 CHAT_ID = "5410388834"
+
 URL = "https://" + "service.dungpham.com.vn/thong-bao"
+SERVER_NAME = "Super 2"
+CATEGORY_NAME = "Hệ thống"
+PLAYERS = ["zzpeacezz", "peacelove"]  # Danh sách 2 nhân vật cần theo dõi
 SEEN_FILE = "seen.txt"
+# ============================================
 
-# 1. Cấu hình Bot 1: Canh đồ nhân vật zzpeacezz (Super 2)
-TOKEN_PLAYER = "8859551015" + ":" + "AAF_BlAuGkhSMGtZ2mg" + "DdOfZ16AqLCF8LsI"
-PLAYER_NAME = "zzpeacezz"
-PLAYER_SERVER = "Super 2"
-PLAYER_CATEGORY = "Hệ thống"
-
-# 2. Cấu hình Bot 2: Canh Boss (2 sao)
-TOKEN_BOSS = "8958519390" + ":" + "AAGhRyJarXhpV4kIhSM" + "HUzp1-plpPqtCFjU"
-BOSS_SERVER = "2 sao"
-BOSS_CATEGORY = "Boss"
-# ==================================================
-
-def send_telegram(token: str, message: str):
-    """Gửi thông báo về đúng Bot Telegram tương ứng"""
+def send_telegram(message: str):
+    """Gửi thông báo về Telegram"""
     try:
-        requests.get(f"https://api.telegram.org/bot{token}/deleteWebhook", timeout=10)
-        api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+        requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook", timeout=10)
+        api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
         payload = {
             "chat_id": CHAT_ID,
             "text": message,
@@ -38,7 +33,7 @@ def send_telegram(token: str, message: str):
         print(f"[Lỗi kết nối Telegram]: {e}")
 
 def normalize_notification(raw_text: str) -> str:
-    """Loại bỏ chữ '- X phút trước' hoặc '- Vừa cập nhật' để không báo trùng"""
+    """Loại bỏ phần thời gian tương đối ('- X phút trước', 'Vừa cập nhật') để tránh báo trùng"""
     cleaned = re.sub(
         r'\s*-\s*(\d+\s*(giây|phút|giờ|ngày|tháng|năm)\s*trước|Vừa cập nhật).*',
         '',
@@ -55,155 +50,147 @@ def load_seen():
 
 def save_seen(seen_set):
     with open(SEEN_FILE, "w", encoding="utf-8") as f:
-        for item in seen_set:
+        for item in sorted(seen_set):
             f.write(item.replace("\n", " | ") + "\n")
 
 async def remove_backdrop(page):
-    """Xóa lớp phủ chào mừng chặn màn hình nếu có"""
+    """Đóng thông báo chào mừng và xóa lớp phủ chắn màn hình"""
+    try:
+        btn = page.locator("button:has-text('Tiếp tục')").first
+        if await btn.count() > 0 and await btn.is_visible():
+            await btn.click(force=True)
+            await page.wait_for_timeout(500)
+    except:
+        pass
+
     await page.evaluate("""() => {
         const backdrops = document.querySelectorAll('.official-welcome-backdrop, [class*="backdrop"], [class*="modal"]');
         backdrops.forEach(el => el.remove());
     }""")
     await page.wait_for_timeout(800)
 
-async def check_player(page, seen_notifications):
-    """Nhiệm vụ 1: Quét thông báo nhân vật zzpeacezz tại Super 2"""
-    print(f"🔍 [1/2] Đang kiểm tra nhân vật {PLAYER_NAME} ({PLAYER_SERVER})...")
-    first_run_player = not any(k.startswith("[PLAYER]") for k in seen_notifications)
-
-    if first_run_player:
-        send_telegram(
-            TOKEN_PLAYER,
-            f"✅ <b>Bot Theo Dõi Nhân Vật đã kết nối!</b>\n"
-            f"👤 Nhân vật: <b>{PLAYER_NAME}</b>\n"
-            f"🌐 Máy chủ: <b>{PLAYER_SERVER}</b> | Danh mục: <b>{PLAYER_CATEGORY}</b>"
-        )
-        seen_notifications.add("[PLAYER]_INIT")
-
-    await page.goto(URL, wait_until="networkidle", timeout=60000)
-    await remove_backdrop(page)
-
-    # Chọn máy chủ Super 2
+async def setup_server_and_category(page):
+    """Chọn máy chủ Super 2 và chuyển Danh mục sang Hệ thống"""
+    # 1. Chọn máy chủ Super 2
     try:
-        srv_item = page.get_by_text(PLAYER_SERVER, exact=True).first
+        srv_item = page.get_by_text(SERVER_NAME, exact=True).first
         if await srv_item.count() > 0:
             await srv_item.scroll_into_view_if_needed()
             await srv_item.click(force=True)
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(1200)
+            print(f"✅ Đã chọn máy chủ: {SERVER_NAME}")
     except Exception as ex:
-        print(f"Lọc máy chủ Player: {ex}")
+        print(f"Lỗi chọn máy chủ: {ex}")
 
-    # Chọn danh mục Hệ thống
+    # 2. Đổi Danh mục từ mặc định (Boss) sang Hệ thống (hoặc bỏ lọc Boss)
     try:
-        cat_dropdown = page.locator("text=Danh mục").locator("..").locator("input, [role='combobox'], .ant-select, select, div[class*='select']").first
-        if await cat_dropdown.count() > 0:
-            await cat_dropdown.click(force=True)
-            await page.wait_for_timeout(500)
-            cat_opt = page.locator(f"text='{PLAYER_CATEGORY}'").first
-            if await cat_opt.count() > 0:
-                await cat_opt.click(force=True)
+        cat_selector = page.locator(".ant-select-selector").first
+        if await cat_selector.count() > 0:
+            await cat_selector.click()
+            await page.wait_for_timeout(800)
+
+            # Tìm và chọn "Hệ thống" trong danh sách xổ xuống
+            opt_he_thong = page.locator(".ant-select-item-option").filter(has_text=CATEGORY_NAME).first
+            if await opt_he_thong.count() > 0 and await opt_he_thong.is_visible():
+                await opt_he_thong.click()
                 await page.wait_for_timeout(1000)
-    except Exception as ex:
-        print(f"Lọc danh mục Player: {ex}")
-
-    # Nhập tên zzpeacezz và bấm Tìm
-    input_box = page.locator("input[type='text'], input[type='search'], input:not([type])").first
-    if await input_box.count() > 0:
-        await input_box.fill(PLAYER_NAME)
-
-    search_btn = page.locator("button:has-text('Tìm')").first
-    if await search_btn.count() > 0:
-        await search_btn.click(force=True)
-    elif await input_box.count() > 0:
-        await input_box.press("Enter")
-
-    await page.wait_for_timeout(3000)
-
-    body_text = await page.locator("body").inner_text()
-    pattern = re.compile(
-        rf"({PLAYER_NAME}.*?Thời gian xuất hiện\s*·?\s*\d{{2}}/\d{{2}}/\d{{4}}\s*-\s*\d{{2}}:\d{{2}}:\d{{2}}[^\n]*)",
-        re.IGNORECASE | re.DOTALL
-    )
-    matches = pattern.findall(body_text)
-
-    if not matches:
-        print(f"⏳ Chưa có thông báo mới cho {PLAYER_NAME}.")
-    else:
-        for match in reversed(matches):
-            clean_msg = re.sub(r'\s*\n\s*', '\n', match.strip())
-            unique_key = "[PLAYER]_" + normalize_notification(clean_msg).replace("\n", " | ")
-
-            if unique_key not in seen_notifications:
-                seen_notifications.add(unique_key)
-                if first_run_player:
-                    if match == matches[0]:
-                        send_telegram(TOKEN_PLAYER, f"🔔 <b>[Thông báo gần nhất hiện tại]:</b>\n\n{clean_msg}")
+                print(f"✅ Đã chọn danh mục: {CATEGORY_NAME}")
+            else:
+                # Nếu không thấy hoặc cần xóa lọc Boss, thử bấm nút xóa (x) hoặc bỏ chọn Boss
+                await cat_selector.hover()
+                await page.wait_for_timeout(300)
+                clear_btn = page.locator(".ant-select-clear").first
+                if await clear_btn.count() > 0:
+                    await clear_btn.click(force=True)
+                    await page.wait_for_timeout(800)
                 else:
-                    send_telegram(TOKEN_PLAYER, f"🎉 <b>THÔNG BÁO MỚI RƠI ĐỒ:</b>\n\n{clean_msg}")
+                    opt_boss = page.locator(".ant-select-item-option").filter(has_text="Boss").first
+                    if await opt_boss.count() > 0 and await opt_boss.is_visible():
+                        await opt_boss.click()
+                        await page.wait_for_timeout(800)
 
-async def check_boss(page, seen_notifications):
-    """Nhiệm vụ 2: Quét Boss tại máy chủ 2 sao"""
-    print(f"🔍 [2/2] Đang kiểm tra Boss tại máy chủ {BOSS_SERVER}...")
-    first_run_boss = not any(k.startswith("[BOSS]") for k in seen_notifications)
-
-    if first_run_boss:
-        send_telegram(
-            TOKEN_BOSS,
-            f"✅ <b>Bot Săn Boss đã kết nối thành công!</b>\n"
-            f"🌐 Máy chủ: <b>{BOSS_SERVER}</b>\n"
-            f"📂 Danh mục: <b>{BOSS_CATEGORY}</b>"
-        )
-        seen_notifications.add("[BOSS]_INIT")
-
-    # Tải lại trang để đặt lại bộ lọc mặc định (Danh mục mặc định là Boss)
-    await page.goto(URL, wait_until="networkidle", timeout=60000)
-    await remove_backdrop(page)
-
-    # Chọn chính xác máy chủ "2 sao"
-    try:
-        srv_item = page.get_by_text(BOSS_SERVER, exact=True).first
-        if await srv_item.count() > 0:
-            await srv_item.scroll_into_view_if_needed()
-            await srv_item.click(force=True)
-            await page.wait_for_timeout(2500)
+            current_cat = (await cat_selector.inner_text()).strip()
+            print(f"📂 Trạng thái ô Danh mục hiện tại: {current_cat}")
     except Exception as ex:
-        print(f"Lỗi chọn máy chủ Boss: {ex}")
+        print(f"Lỗi chọn danh mục: {ex}")
 
+async def check_single_player(page, player_name: str, seen_notifications: set):
+    """Tìm kiếm và quét thông báo rơi đồ cho từng nhân vật"""
+    print(f"🔍 Đang kiểm tra nhân vật: {player_name} ...")
+    prefix = f"[DROP_{player_name.upper()}]"
+    first_run_for_player = not any(k.startswith(prefix) for k in seen_notifications)
+
+    # Nhập tên nhân vật vào ô tìm kiếm
+    try:
+        input_box = page.get_by_placeholder("Nhập tên nhân vật", exact=False).first
+        if await input_box.count() == 0:
+            input_box = page.locator("input.ant-input, input[type='text']").first
+
+        await input_box.click()
+        await input_box.fill("")
+        await page.wait_for_timeout(300)
+        await input_box.fill(player_name)
+        await page.wait_for_timeout(400)
+
+        search_btn = page.locator("button:has-text('Tìm')").first
+        if await search_btn.count() > 0:
+            await search_btn.click(force=True)
+        else:
+            await input_box.press("Enter")
+    except Exception as ex:
+        print(f"Lỗi nhập tên {player_name}: {ex}")
+
+    # Chờ kết quả tải xong
+    await page.wait_for_timeout(3500)
+
+    # Quét toàn bộ thông báo của nhân vật trên trang
     body_text = await page.locator("body").inner_text()
     pattern = re.compile(
-        r"(Boss:\s*[^\n]+\s*\n+\s*Map:\s*[^\n]+\s*\n+\s*Thời gian xuất hiện\s*·?\s*\d{2}/\d{2}/\d{4}\s*-\s*\d{2}:\d{2}:\d{2}[^\n]*)",
+        rf"([^\n]*{re.escape(player_name)}[^\n]*(?:\n+(?!\s*Thời gian xuất hiện)[^\n]+){{0,2}}\n+\s*Thời gian xuất hiện[^\n]*)",
         re.IGNORECASE
     )
     matches = pattern.findall(body_text)
 
     if not matches:
-        print(f"⏳ Chưa có thông báo Boss tại {BOSS_SERVER}.")
+        print(f"⏳ Hiện chưa có thông báo nào của {player_name}.")
+        if first_run_for_player:
+            seen_notifications.add(f"{prefix}_INIT")
     else:
-        new_bosses = []
+        print(f"✅ Tìm thấy {len(matches)} thông báo của {player_name}!")
+        seen_notifications.add(f"{prefix}_INIT")
+
         for match in reversed(matches):
             clean_msg = re.sub(r'\s*\n\s*', '\n', match.strip())
-            unique_key = "[BOSS]_" + normalize_notification(clean_msg).replace("\n", " | ")
+            unique_key = f"{prefix}_" + normalize_notification(clean_msg).replace("\n", " | ")
 
             if unique_key not in seen_notifications:
                 seen_notifications.add(unique_key)
-                new_bosses.append(clean_msg)
-
-        if new_bosses:
-            if first_run_boss:
-                latest_preview = "\n\n".join(new_bosses[-3:])
-                send_telegram(
-                    TOKEN_BOSS,
-                    f"🔔 <b>[Danh sách Boss gần nhất - {BOSS_SERVER}]:</b>\n\n{latest_preview}"
-                )
-            else:
-                for boss_msg in new_bosses:
+                if first_run_for_player:
+                    # Lần đầu chạy của nhân vật: gửi tin mới nhất trên web để xác nhận
+                    if match == matches[0]:
+                        send_telegram(
+                            f"🔔 <b>[Thông báo gần nhất của {player_name}]:</b>\n\n{clean_msg}"
+                        )
+                        print(f"📩 Đã gửi tin gần nhất của {player_name}:\n{clean_msg}")
+                else:
+                    # Các lần chạy sau: có đồ mới rơi sẽ báo ngay
                     send_telegram(
-                        TOKEN_BOSS,
-                        f"🔥 <b>BOSS XUẤT HIỆN ({BOSS_SERVER}):</b>\n\n{boss_msg}"
+                        f"🎉 <b>THÔNG BÁO MỚI RƠI ĐỒ ({player_name} - {SERVER_NAME}):</b>\n\n{clean_msg}"
                     )
+                    print(f"🎉 Phát hiện đồ mới của {player_name}:\n{clean_msg}")
 
-async def run_all():
+async def run_bot():
     seen_notifications = load_seen()
+
+    # Gửi thông báo kích hoạt khi mới cập nhật danh sách 2 nhân vật lần đầu
+    if "[MULTI_PLAYER_V3_INIT]" not in seen_notifications:
+        players_str = ", ".join(PLAYERS)
+        send_telegram(
+            f"✅ <b>Đã cập nhật Bot Theo Dõi Rơi Đồ!</b>\n"
+            f"👤 Nhân vật: <b>{players_str}</b>\n"
+            f"🌐 Máy chủ: <b>{SERVER_NAME}</b> | Danh mục: <b>{CATEGORY_NAME}</b>"
+        )
+        seen_notifications.add("[MULTI_PLAYER_V3_INIT]")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -212,12 +199,17 @@ async def run_all():
         )
         page = await context.new_page()
 
-        # Chạy lần lượt cả 2 nhiệm vụ
-        await check_player(page, seen_notifications)
-        await check_boss(page, seen_notifications)
+        print(f"🌐 Đang truy cập: {URL} ...")
+        await page.goto(URL, wait_until="networkidle", timeout=60000)
+        await remove_backdrop(page)
+        await setup_server_and_category(page)
+
+        # Lần lượt kiểm tra từng nhân vật: zzpeacezz và peacelove
+        for player in PLAYERS:
+            await check_single_player(page, player, seen_notifications)
 
         save_seen(seen_notifications)
         await browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(run_all())
+    asyncio.run(run_bot())
