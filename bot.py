@@ -1,23 +1,33 @@
 import asyncio
 import os
 import re
+import time
+from datetime import datetime, timezone, timedelta
 import requests
 from playwright.async_api import async_playwright
 
 # ================= CẤU HÌNH =================
-# Tách chuỗi Token để bảo mật trên GitHub
+# Tách chuỗi Token để bảo mật trên GitHub Public
 BOT_TOKEN = "8859551015" + ":" + "AAF_BlAuGkhSMGtZ2mg" + "DdOfZ16AqLCF8LsI"
 CHAT_ID = "5410388834"
 
 URL = "https://" + "service.dungpham.com.vn/thong-bao"
 SERVER_NAME = "Super 2"
 CATEGORY_NAME = "Hệ thống"
-PLAYERS = ["zzpeacezz", "peacelove"]  # Danh sách 2 nhân vật cần theo dõi
+PLAYERS = ["zzpeacezz", "peacelove"]  # Theo dõi cả 2 nhân vật
 SEEN_FILE = "seen.txt"
+
+LOOP_DURATION_MINUTES = 30    # Đứng canh liên tục 30 phút mỗi phiên chạy
+CHECK_INTERVAL_SECONDS = 120  # Quét lại mỗi 120 giây (2 phút/lần)
 # ============================================
 
+def get_vn_time() -> str:
+    """Lấy giờ Việt Nam hiện tại (GMT+7)"""
+    vn_tz = timezone(timedelta(hours=7))
+    return datetime.now(vn_tz).strftime("%H:%M:%S - %d/%m/%Y")
+
 def send_telegram(message: str):
-    """Gửi thông báo về Telegram"""
+    """Gửi tin nhắn thông báo về Telegram"""
     try:
         requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook", timeout=10)
         api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -33,7 +43,7 @@ def send_telegram(message: str):
         print(f"[Lỗi kết nối Telegram]: {e}")
 
 def normalize_notification(raw_text: str) -> str:
-    """Loại bỏ phần thời gian tương đối ('- X phút trước', 'Vừa cập nhật') để tránh báo trùng"""
+    """Cắt bỏ phần '- X phút trước' hoặc '- Vừa cập nhật' để tránh báo trùng"""
     cleaned = re.sub(
         r'\s*-\s*(\d+\s*(giây|phút|giờ|ngày|tháng|năm)\s*trước|Vừa cập nhật).*',
         '',
@@ -54,7 +64,7 @@ def save_seen(seen_set):
             f.write(item.replace("\n", " | ") + "\n")
 
 async def remove_backdrop(page):
-    """Đóng thông báo chào mừng và xóa lớp phủ chắn màn hình"""
+    """Đóng nút Tiếp tục và xóa lớp phủ chào mừng chặn màn hình"""
     try:
         btn = page.locator("button:has-text('Tiếp tục')").first
         if await btn.count() > 0 and await btn.is_visible():
@@ -82,21 +92,19 @@ async def setup_server_and_category(page):
     except Exception as ex:
         print(f"Lỗi chọn máy chủ: {ex}")
 
-    # 2. Đổi Danh mục từ mặc định (Boss) sang Hệ thống (hoặc bỏ lọc Boss)
+    # 2. Chuyển Danh mục từ Boss sang Hệ thống (hoặc xóa lọc Boss)
     try:
         cat_selector = page.locator(".ant-select-selector").first
         if await cat_selector.count() > 0:
             await cat_selector.click()
             await page.wait_for_timeout(800)
 
-            # Tìm và chọn "Hệ thống" trong danh sách xổ xuống
             opt_he_thong = page.locator(".ant-select-item-option").filter(has_text=CATEGORY_NAME).first
             if await opt_he_thong.count() > 0 and await opt_he_thong.is_visible():
                 await opt_he_thong.click()
                 await page.wait_for_timeout(1000)
                 print(f"✅ Đã chọn danh mục: {CATEGORY_NAME}")
             else:
-                # Nếu không thấy hoặc cần xóa lọc Boss, thử bấm nút xóa (x) hoặc bỏ chọn Boss
                 await cat_selector.hover()
                 await page.wait_for_timeout(300)
                 clear_btn = page.locator(".ant-select-clear").first
@@ -108,19 +116,20 @@ async def setup_server_and_category(page):
                     if await opt_boss.count() > 0 and await opt_boss.is_visible():
                         await opt_boss.click()
                         await page.wait_for_timeout(800)
-
-            current_cat = (await cat_selector.inner_text()).strip()
-            print(f"📂 Trạng thái ô Danh mục hiện tại: {current_cat}")
     except Exception as ex:
         print(f"Lỗi chọn danh mục: {ex}")
 
-async def check_single_player(page, player_name: str, seen_notifications: set):
-    """Tìm kiếm và quét thông báo rơi đồ cho từng nhân vật"""
+async def check_single_player(page, player_name: str, seen_notifications: set) -> bool:
+    """
+    Quét thông báo rơi đồ của 1 nhân vật.
+    Trả về True nếu phát hiện có đồ mới rơi, False nếu không có đồ mới.
+    """
     print(f"🔍 Đang kiểm tra nhân vật: {player_name} ...")
     prefix = f"[DROP_{player_name.upper()}]"
     first_run_for_player = not any(k.startswith(prefix) for k in seen_notifications)
+    found_new_drop = False
 
-    # Nhập tên nhân vật vào ô tìm kiếm
+    # Nhập tên nhân vật và bấm Tìm
     try:
         input_box = page.get_by_placeholder("Nhập tên nhân vật", exact=False).first
         if await input_box.count() == 0:
@@ -140,10 +149,10 @@ async def check_single_player(page, player_name: str, seen_notifications: set):
     except Exception as ex:
         print(f"Lỗi nhập tên {player_name}: {ex}")
 
-    # Chờ kết quả tải xong
+    # Chờ dữ liệu trả về
     await page.wait_for_timeout(3500)
 
-    # Quét toàn bộ thông báo của nhân vật trên trang
+    # Quét danh sách thông báo trên giao diện
     body_text = await page.locator("body").inner_text()
     pattern = re.compile(
         rf"([^\n]*{re.escape(player_name)}[^\n]*(?:\n+(?!\s*Thời gian xuất hiện)[^\n]+){{0,2}}\n+\s*Thời gian xuất hiện[^\n]*)",
@@ -152,13 +161,11 @@ async def check_single_player(page, player_name: str, seen_notifications: set):
     matches = pattern.findall(body_text)
 
     if not matches:
-        print(f"⏳ Hiện chưa có thông báo nào của {player_name}.")
+        print(f"⏳ Không tìm thấy thông báo nào của {player_name} trên bảng.")
         if first_run_for_player:
             seen_notifications.add(f"{prefix}_INIT")
     else:
-        print(f"✅ Tìm thấy {len(matches)} thông báo của {player_name}!")
         seen_notifications.add(f"{prefix}_INIT")
-
         for match in reversed(matches):
             clean_msg = re.sub(r'\s*\n\s*', '\n', match.strip())
             unique_key = f"{prefix}_" + normalize_notification(clean_msg).replace("\n", " | ")
@@ -166,31 +173,26 @@ async def check_single_player(page, player_name: str, seen_notifications: set):
             if unique_key not in seen_notifications:
                 seen_notifications.add(unique_key)
                 if first_run_for_player:
-                    # Lần đầu chạy của nhân vật: gửi tin mới nhất trên web để xác nhận
+                    # Lần đầu tiên chạy của nhân vật: chỉ lưu lịch sử và gửi 1 tin mẫu gần nhất
                     if match == matches[0]:
                         send_telegram(
-                            f"🔔 <b>[Thông báo gần nhất của {player_name}]:</b>\n\n{clean_msg}"
+                            f"🔔 <b>[Thông báo gần nhất trên web của {player_name}]:</b>\n\n{clean_msg}"
                         )
-                        print(f"📩 Đã gửi tin gần nhất của {player_name}:\n{clean_msg}")
+                        print(f"📩 Đã gửi tin mẫu gần nhất của {player_name}:\n{clean_msg}")
                 else:
-                    # Các lần chạy sau: có đồ mới rơi sẽ báo ngay
+                    # Các lần quét tiếp theo: phát hiện món đồ mới rơi!
+                    found_new_drop = True
                     send_telegram(
                         f"🎉 <b>THÔNG BÁO MỚI RƠI ĐỒ ({player_name} - {SERVER_NAME}):</b>\n\n{clean_msg}"
                     )
                     print(f"🎉 Phát hiện đồ mới của {player_name}:\n{clean_msg}")
 
+    return found_new_drop
+
 async def run_bot():
     seen_notifications = load_seen()
-
-    # Gửi thông báo kích hoạt khi mới cập nhật danh sách 2 nhân vật lần đầu
-    if "[MULTI_PLAYER_V3_INIT]" not in seen_notifications:
-        players_str = ", ".join(PLAYERS)
-        send_telegram(
-            f"✅ <b>Đã cập nhật Bot Theo Dõi Rơi Đồ!</b>\n"
-            f"👤 Nhân vật: <b>{players_str}</b>\n"
-            f"🌐 Máy chủ: <b>{SERVER_NAME}</b> | Danh mục: <b>{CATEGORY_NAME}</b>"
-        )
-        seen_notifications.add("[MULTI_PLAYER_V3_INIT]")
+    start_time = time.time()
+    end_time = start_time + (LOOP_DURATION_MINUTES * 60)
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -204,11 +206,44 @@ async def run_bot():
         await remove_backdrop(page)
         await setup_server_and_category(page)
 
-        # Lần lượt kiểm tra từng nhân vật: zzpeacezz và peacelove
-        for player in PLAYERS:
-            await check_single_player(page, player, seen_notifications)
+        cycle = 1
+        while time.time() < end_time:
+            print(f"\n🔄 --- Lượt quét thứ {cycle} ({get_vn_time()}) ---")
 
-        save_seen(seen_notifications)
+            # Từ lượt thứ 2 trở đi, bấm nút "Làm mới" trên web trước khi tìm để cập nhật dữ liệu mới nhất
+            if cycle > 1:
+                try:
+                    refresh_btn = page.locator("button:has-text('Làm mới')").first
+                    if await refresh_btn.count() > 0:
+                        await refresh_btn.click(force=True)
+                        await page.wait_for_timeout(2000)
+                except Exception as ex:
+                    print(f"Làm mới trang: {ex}")
+
+            no_drop_players = []
+            for player in PLAYERS:
+                has_new = await check_single_player(page, player, seen_notifications)
+                if not has_new:
+                    no_drop_players.append(player)
+
+            # Nếu không nhặt được món đồ mới nào trong lượt quét này thì báo về Telegram
+            if no_drop_players:
+                names_str = ", ".join(no_drop_players)
+                send_telegram(
+                    f"⏳ <b>[Quét lần #{cycle} - {get_vn_time()}]</b>\n"
+                    f"Hiện tại nhân vật <b>{names_str}</b> vẫn chưa nhặt được món đồ mới nào."
+                )
+                print(f"📩 Đã báo Telegram: {names_str} chưa nhặt được món đồ mới nào.")
+
+            save_seen(seen_notifications)
+            cycle += 1
+
+            # Nghỉ 2 phút trước khi quét lượt tiếp theo
+            if time.time() + CHECK_INTERVAL_SECONDS < end_time:
+                await asyncio.sleep(CHECK_INTERVAL_SECONDS)
+            else:
+                break
+
         await browser.close()
 
 if __name__ == "__main__":
