@@ -2,16 +2,17 @@ name: Run Game Bot
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
-# Khóa chống trùng: Đảm bảo luôn chỉ có duy nhất 1 bot chạy, không bao giờ bị nhân đôi tiến trình
+# Khóa chống trùng: Đảm bảo chỉ có duy nhất 1 ca chạy tại mọi thời điểm
 concurrency:
   group: run-game-bot-single
   cancel-in-progress: true
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -35,9 +36,15 @@ jobs:
         run: python bot.py
 
       - name: Save seen state
-        if: always()
+        if: success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add seen.txt
           git diff --staged --quiet || (git commit -m "Update seen notifications" && git pull --rebase && git push)
+
+      - name: Auto trigger next run
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run run.yml
