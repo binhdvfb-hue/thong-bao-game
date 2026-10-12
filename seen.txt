@@ -1,11 +1,14 @@
+[BOSS]_Boss: Black Goku 1 | Map: Thành phố phía đông | Thời gian xuất hiện · 12/10/2026 - 08:27:55
 [BOSS]_Boss: Super Black Goku 0 | Map: Thành phố phía đông | Thời gian xuất hiện · 12/10/2026 - 08:26:45
+[BOSS]_Boss: Super Black Goku 1 | Map: Thành phố phía đông | Thời gian xuất hiện · 12/10/2026 - 08:27:43
+[BOSS]_Boss: Super Broly 29 | Map: Thành phố Vegeta | Thời gian xuất hiện · 12/10/2026 - 08:29:33
+[BOSS]_Boss: Số 1 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:45
+[BOSS]_Boss: Số 2 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:57
+[BOSS]_Boss: Số 3 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:19
 [BOSS]_Boss: Số 4 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:07
 [BOSS]_Boss: Tiểu đội trưởng | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:30:07
-[BOSS]_Boss: Super Broly 29 | Map: Thành phố Vegeta | Thời gian xuất hiện · 12/10/2026 - 08:29:33
-[BOSS]_Boss: Số 2 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:57
-[BOSS]_Boss: Super Black Goku 1 | Map: Thành phố phía đông | Thời gian xuất hiện · 12/10/2026 - 08:27:43
-[BOSS]_Boss: Black Goku 1 | Map: Thành phố phía đông | Thời gian xuất hiện · 12/10/2026 - 08:27:55
-[BOSS]_Boss: Số 1 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:45
 [BOSS]_INIT
-[BOSS]_Boss: Số 3 | Map: Núi khỉ đỏ | Thời gian xuất hiện · 12/10/2026 - 08:29:19
+[DROP_PEACELOVE]_INIT
+[DROP_ZZPEACEZZ]_INIT
+[MULTI_PLAYER_V3_INIT]
 [PLAYER]_INIT
