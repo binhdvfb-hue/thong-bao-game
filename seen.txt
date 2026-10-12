@@ -26,6 +26,7 @@
 [DROP_V8_PEACELOVE]_INIT
 [DROP_V8_PEACELOVE]_peacelove vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 07/10/2026 - 18:20:36
 [DROP_V8_PEACELOVE]_peacelove vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 11/10/2026 - 23:56:02
+[DROP_V8_PEACELOVE]_peacelove vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 13/10/2026 - 03:58:01
 [DROP_V8_ZZPEACEZZ]_INIT
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt Set Thần Vũ Trụ Kaio | Thời gian xuất hiện · 08/10/2026 - 08:35:36
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt Set Thần Vũ Trụ Kaio | Thời gian xuất hiện · 11/10/2026 - 13:00:52
@@ -37,6 +38,7 @@
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 10/10/2026 - 04:15:36
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 12/10/2026 - 08:17:33
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 12/10/2026 - 13:04:06
+[DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 13/10/2026 - 03:23:05
 [DROP_ZZPEACEZZ]_INIT
 [MULTI_PLAYER_V3_INIT]
 [PLAYER]_INIT
