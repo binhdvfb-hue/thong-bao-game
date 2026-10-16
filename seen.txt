@@ -51,6 +51,7 @@
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 14/10/2026 - 17:30:41
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 15/10/2026 - 00:13:55
 [DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 16/10/2026 - 05:08:56
+[DROP_V8_ZZPEACEZZ]_zzpeacezz vừa đánh quái may mắn nhận được 1 trang bị Set kích hoạt | Thời gian xuất hiện · 16/10/2026 - 08:41:24
 [DROP_ZZPEACEZZ]_INIT
 [MULTI_PLAYER_V3_INIT]
 [PLAYER]_INIT
